@@ -30,8 +30,9 @@ impl Lexer {
                     tokens.push(self.lex_number());
                 }
 
-                '"' => {
-                    tokens.push(self.lex_string());
+                '"' | '\'' => {
+                    let quote = self.next_char().unwrap();
+                    tokens.push(self.lex_string(quote));
                 }
 
                 '+' => {
@@ -129,37 +130,38 @@ impl Lexer {
         }
     }
 
-    fn lex_string(&mut self) -> Token {
-        self.next_char(); // skip opening "
-        let mut result = String::new();
+    fn lex_string(&mut self, delimiter: char) -> Token {
+    let mut result = String::new();
 
-        while let Some(c) = self.peek_char() {
-            match c {
-                '"' => {
-                    self.next_char(); // closing "
-                    break;
-                }
-                '\\' => {
-                    self.next_char(); // skip '\'
-                    if let Some(escaped) = self.next_char() {
-                        result.push(match escaped {
-                            'n' => '\n',
-                            't' => '\t',
-                            '"' => '"',
-                            '\\' => '\\',
-                            other => other,
-                        });
-                    }
-                }
-                _ => {
-                    result.push(c);
-                    self.next_char();
+    while let Some(c) = self.peek_char() {
+        match c {
+            ch if ch == delimiter => {
+                self.next_char(); // consume closing quote
+                break;
+            }
+            '\\' => {
+                self.next_char(); // skip '\'
+                if let Some(escaped) = self.next_char() {
+                    result.push(match escaped {
+                        'n' => '\n',
+                        't' => '\t',
+                        '"' => '"',
+                        '\'' => '\'',
+                        '\\' => '\\',
+                        other => other,
+                    });
                 }
             }
+            _ => {
+                result.push(c);
+                self.next_char();
+            }
         }
-
-        Token::String(result)
     }
+
+    Token::String(result)
+}
+
 
     fn skip_line_comment(&mut self) {
         while let Some(c) = self.peek_char() {
