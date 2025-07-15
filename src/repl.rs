@@ -7,7 +7,7 @@ use crate::eval::Evaluator;
 pub fn start_repl() {
     let mut evaluator = Evaluator::new();
 
-    println!("Alin REPL v0.1 — type 'exit' to quit");
+    println!("Alin REPL v0.1 — type 'exit()' to quit");
     loop {
         print!(">>> ");
         io::stdout().flush().unwrap();
@@ -19,7 +19,7 @@ pub fn start_repl() {
         }
 
         let trimmed = input.trim();
-        if trimmed == "exit" {
+        if trimmed == "exit()" {
             break;
         }
 
