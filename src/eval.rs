@@ -1,5 +1,4 @@
 use std::collections::HashMap;
-
 use crate::ast::Expr;
 
 pub struct Evaluator {
@@ -10,6 +9,7 @@ pub struct Evaluator {
 pub enum Value {
     Number(f64),
     String(String),
+    Nil, // untuk nilai return yang kosong
 }
 
 impl std::fmt::Display for Value {
@@ -17,6 +17,7 @@ impl std::fmt::Display for Value {
         match self {
             Value::Number(n) => write!(f, "{}", n),
             Value::String(s) => write!(f, "{}", s),
+            Value::Nil => write!(f, "nil"),
         }
     }
 }
@@ -37,18 +38,13 @@ impl Evaluator {
     fn eval(&mut self, expr: &Expr) -> Option<Value> {
         match expr {
             Expr::Number(n) => Some(Value::Number(*n)),
-
             Expr::StringLiteral(s) => Some(Value::String(s.clone())),
-
             Expr::Variable(name) => self.env.get(name).cloned(),
 
             Expr::Assignment { name, expr } => {
-                if let Some(val) = self.eval(expr) {
-                    self.env.insert(name.clone(), val.clone());
-                    Some(val)
-                } else {
-                    None
-                }
+                let value = self.eval(expr)?;
+                self.env.insert(name.clone(), value.clone());
+                Some(value)
             }
 
             Expr::Binary { left, op, right } => {
@@ -62,6 +58,10 @@ impl Evaluator {
                             crate::token::Token::Minus => Some(Value::Number(a - b)),
                             crate::token::Token::Star => Some(Value::Number(a * b)),
                             crate::token::Token::Slash => Some(Value::Number(a / b)),
+                            crate::token::Token::EqualEqual => Some(Value::Number((a == b) as i32 as f64)),
+                            crate::token::Token::BangEqual => Some(Value::Number((a != b) as i32 as f64)),
+                            crate::token::Token::Less => Some(Value::Number((a < b) as i32 as f64)),
+                            crate::token::Token::LessEqual => Some(Value::Number((a <= b) as i32 as f64)),
                             _ => None,
                         }
                     }
@@ -77,13 +77,13 @@ impl Evaluator {
 
             Expr::FunctionCall { name, args } => {
                 if name == "print" {
-                    let mut output = Vec::new();
-                    for arg in args {
-                        match self.eval(arg) {
-                            Some(val) => output.push(format!("{}", val)),
-                            None => output.push("nil".to_string()),
-                        }
-                    }
+                    let output: Vec<String> = args
+                        .iter()
+                        .map(|arg| match self.eval(arg) {
+                            Some(val) => val.to_string(),
+                            None => "nil".to_string(),
+                        })
+                        .collect();
                     println!("{}", output.join(" "));
                     None
                 } else {
@@ -92,9 +92,53 @@ impl Evaluator {
                 }
             }
 
-            
+            Expr::Block(statements) => {
+                let mut last = Value::Nil;
+                for stmt in statements {
+                    if let Some(val) = self.eval(stmt) {
+                        last = val;
+                    }
+                }
+                Some(last)
+            }
 
-            _ => None, // skip unimplemented expressions (If, While, etc.)
+            Expr::If { condition, then_branch, else_branch } => {
+                let cond_val = self.eval(condition)?;
+                match cond_val {
+                    Value::Number(n) if n != 0.0 => self.eval(then_branch),
+                    _ => {
+                        if let Some(else_expr) = else_branch {
+                            self.eval(else_expr)
+                        } else {
+                            Some(Value::Nil)
+                        }
+                    }
+                }
+            }
+
+            Expr::While { condition, body } => {
+                loop {
+                    let cond_val = self.eval(condition)?;
+                    if let Value::Number(n) = cond_val {
+                        if n == 0.0 {
+                            break;
+                        }
+                        self.eval(body);
+                    } else {
+                        break;
+                    }
+                }
+                Some(Value::Nil)
+            }
+
+            Expr::Return(expr) => {
+                self.eval(expr)
+            }
+
+            _ => {
+                println!("Unsupported expression");
+                None
+            }
         }
     }
 }

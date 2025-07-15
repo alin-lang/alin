@@ -4,11 +4,23 @@ mod parser;
 mod ast;
 mod eval;
 mod repl;
+mod playground;
 
 use lexer::Lexer;
 use parser::Parser;
 use eval::Evaluator;
 
+use std::env;
+use repl::start_repl;
+use playground::run_file;
+
 fn main() {
-    repl::start_repl();
+    let args: Vec<String> = env::args().collect();
+
+    if args.len() > 1 {
+        let path = &args[1];
+        run_file(path);
+    } else {
+        start_repl();
+    }
 }

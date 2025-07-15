@@ -23,7 +23,7 @@ impl Lexer {
                 }
 
                 c if c.is_ascii_alphabetic() || c == '_' => {
-                    tokens.push(self.lex_identifier());
+                    tokens.push(self.lex_identifier_or_keyword());
                 }
 
                 c if c.is_ascii_digit() => {
@@ -59,26 +59,6 @@ impl Lexer {
                     }
                 }
 
-                '=' => {
-                    self.next_char();
-                    tokens.push(Token::Equal);
-                }
-
-                '(' => {
-                    self.next_char();
-                    tokens.push(Token::LParen);
-                }
-
-                ')' => {
-                    self.next_char();
-                    tokens.push(Token::RParen);
-                }
-
-                ',' => {
-                    self.next_char();
-                    tokens.push(Token::Comma);
-                }
-                
                 '=' => {
                     self.next_char();
                     if self.peek_char() == Some('=') {
@@ -119,6 +99,36 @@ impl Lexer {
                     }
                 }
 
+                '(' => {
+                    self.next_char();
+                    tokens.push(Token::LParen);
+                }
+
+                ')' => {
+                    self.next_char();
+                    tokens.push(Token::RParen);
+                }
+
+                '{' => {
+                    self.next_char();
+                    tokens.push(Token::LBrace);
+                }
+
+                '}' => {
+                    self.next_char();
+                    tokens.push(Token::RBrace);
+                }
+
+                ',' => {
+                    self.next_char();
+                    tokens.push(Token::Comma);
+                }
+
+                ';' => {
+                    self.next_char();
+                    tokens.push(Token::Semicolon);
+                }
+
                 _ => {
                     println!("Lexer warning: unknown character '{}'", ch);
                     self.next_char();
@@ -130,7 +140,7 @@ impl Lexer {
         tokens
     }
 
-    fn lex_identifier(&mut self) -> Token {
+    fn lex_identifier_or_keyword(&mut self) -> Token {
         let mut ident = String::new();
         while let Some(c) = self.peek_char() {
             if c.is_ascii_alphanumeric() || c == '_' {
@@ -141,8 +151,14 @@ impl Lexer {
             }
         }
 
-        // Bisa tambahkan keyword check di sini jika nanti mendukung if/while/etc
-        Token::Identifier(ident)
+        match ident.as_str() {
+            "if" => Token::If,
+            "else" => Token::Else,
+            "while" => Token::While,
+            "fn" => Token::Fn,
+            "return" => Token::Return,
+            _ => Token::Identifier(ident),
+        }
     }
 
     fn lex_number(&mut self) -> Token {
@@ -166,37 +182,36 @@ impl Lexer {
     }
 
     fn lex_string(&mut self, delimiter: char) -> Token {
-    let mut result = String::new();
+        let mut result = String::new();
 
-    while let Some(c) = self.peek_char() {
-        match c {
-            ch if ch == delimiter => {
-                self.next_char(); // consume closing quote
-                break;
-            }
-            '\\' => {
-                self.next_char(); // skip '\'
-                if let Some(escaped) = self.next_char() {
-                    result.push(match escaped {
-                        'n' => '\n',
-                        't' => '\t',
-                        '"' => '"',
-                        '\'' => '\'',
-                        '\\' => '\\',
-                        other => other,
-                    });
+        while let Some(c) = self.peek_char() {
+            match c {
+                ch if ch == delimiter => {
+                    self.next_char(); // consume closing quote
+                    break;
+                }
+                '\\' => {
+                    self.next_char(); // skip '\'
+                    if let Some(escaped) = self.next_char() {
+                        result.push(match escaped {
+                            'n' => '\n',
+                            't' => '\t',
+                            '"' => '"',
+                            '\'' => '\'',
+                            '\\' => '\\',
+                            other => other,
+                        });
+                    }
+                }
+                _ => {
+                    result.push(c);
+                    self.next_char();
                 }
             }
-            _ => {
-                result.push(c);
-                self.next_char();
-            }
         }
+
+        Token::String(result)
     }
-
-    Token::String(result)
-}
-
 
     fn skip_line_comment(&mut self) {
         while let Some(c) = self.peek_char() {

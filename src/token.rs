@@ -1,29 +1,35 @@
+
 #[derive(Debug, Clone, PartialEq)]
 pub enum Token {
-    // Keywords
+    Identifier(String),
     Number(f64),
     String(String),
-    Identifier(String),
+
     Plus,
     Minus,
     Star,
     Slash,
+
     Equal,
     EqualEqual,
     BangEqual,
     Less,
-    Greater,
     LessEqual,
+    Greater,
     GreaterEqual,
+
     LParen,
     RParen,
     LBrace,
     RBrace,
     Comma,
+    Semicolon,
+
     If,
     Else,
     While,
     Fn,
     Return,
-    Eof
+
+    Eof,
 }

@@ -1,5 +1,3 @@
-use std::ops::RemAssign;
-
 use crate::ast::Expr;
 use crate::token::Token;
 
@@ -37,6 +35,7 @@ impl Parser {
         while self.peek() != Token::Eof {
             if let Some(expr) = self.parse_expr() {
                 exprs.push(expr);
+                self.eat(&Token::Semicolon); // optional
             } else {
                 panic!("Syntax error near {:?}", self.peek());
             }
@@ -45,7 +44,13 @@ impl Parser {
     }
 
     fn parse_expr(&mut self) -> Option<Expr> {
-        self.parse_assignment()
+        match self.peek() {
+            Token::If => self.parse_if(),
+            Token::While => self.parse_while(),
+            Token::LBrace => self.parse_block(),
+            Token::Return => self.parse_return(),
+            _ => self.parse_assignment(),
+        }
     }
 
     fn parse_assignment(&mut self) -> Option<Expr> {
@@ -62,6 +67,25 @@ impl Parser {
             } else {
                 panic!("Invalid assignment target");
             }
+        }
+
+        Some(expr)
+    }
+
+    fn parse_comparison(&mut self) -> Option<Expr> {
+        let mut expr = self.parse_binary(5)?;
+
+        while matches!(
+            self.peek(),
+            Token::EqualEqual | Token::BangEqual | Token::Less | Token::LessEqual
+        ) {
+            let op = self.next();
+            let right = self.parse_binary(5)?;
+            expr = Expr::Binary {
+                left: Box::new(expr),
+                op,
+                right: Box::new(right),
+            };
         }
 
         Some(expr)
@@ -96,9 +120,7 @@ impl Parser {
     fn parse_primary(&mut self) -> Option<Expr> {
         match self.next() {
             Token::Number(n) => Some(Expr::Number(n)),
-
             Token::String(s) => Some(Expr::StringLiteral(s)),
-
             Token::Identifier(name) => {
                 if self.peek() == Token::LParen {
                     self.next(); // consume '('
@@ -119,34 +141,60 @@ impl Parser {
                     Some(Expr::Variable(name))
                 }
             }
-
             Token::LParen => {
                 let expr = self.parse_expr()?;
                 self.eat(&Token::RParen);
                 Some(expr)
             }
-
             _ => None,
         }
     }
 
-    fn parse_comparison(&mut self) -> Option<Expr> {
-        let mut expr = self.parse_binary(5)?; // term = +, - level
+    fn parse_if(&mut self) -> Option<Expr> {
+        self.next(); // consume `if`
+        let condition = self.parse_expr()?;
+        let then_branch = Box::new(self.parse_expr()?);
+        let else_branch = if self.peek() == Token::Else {
+            self.next(); // consume `else`
+            Some(Box::new(self.parse_expr()?))
+        } else {
+            None
+        };
 
-        while matches!(
-            self.peek(),
-            Token::Greater | Token::Less | Token::EqualEqual | Token::BangEqual
-        ) {
-            let op = self.next().clone();
-            let right = self.parse_binary(5)?;
-            expr = Expr::Binary {
-                left: Box::new(expr),
-                op,
-                right: Box::new(right),
-            };
+        Some(Expr::If {
+            condition: Box::new(condition),
+            then_branch,
+            else_branch,
+        })
+    }
+
+    fn parse_while(&mut self) -> Option<Expr> {
+        self.next(); // consume `while`
+        let condition = self.parse_expr()?;
+        let body = Box::new(self.parse_expr()?);
+        Some(Expr::While {
+            condition: Box::new(condition),
+            body,
+        })
+    }
+
+    fn parse_return(&mut self) -> Option<Expr> {
+        self.next(); // consume `return`
+        let value = self.parse_expr()?;
+        Some(Expr::Return(Box::new(value)))
+    }
+
+    fn parse_block(&mut self) -> Option<Expr> {
+        self.eat(&Token::LBrace); // consume '{'
+        let mut exprs = Vec::new();
+        while self.peek() != Token::RBrace && self.peek() != Token::Eof {
+            if let Some(expr) = self.parse_expr() {
+                exprs.push(expr);
+                self.eat(&Token::Semicolon); // optional
+            }
         }
-
-        Some(expr)
+        self.eat(&Token::RBrace); // consume '}'
+        Some(Expr::Block(exprs))
     }
 }
 

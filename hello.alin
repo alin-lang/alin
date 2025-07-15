@@ -1,0 +1,6 @@
+x = 42;
+if x == 42 {
+    print("Jawaban hidup");
+} else {
+    print("Bukan");
+}
