@@ -157,6 +157,8 @@ impl Lexer {
             "while" => Token::While,
             "fn" => Token::Fn,
             "return" => Token::Return,
+            "break" => Token::Break,
+            "continue" => Token::Continue,
             _ => Token::Identifier(ident),
         }
     }

@@ -146,6 +146,11 @@ impl Parser {
                 self.eat(&Token::RParen);
                 Some(expr)
             }
+            Token::Break => Some(Expr::Break),
+
+            Token::Continue => Some(Expr::Continue),
+
+            
             _ => None,
         }
     }

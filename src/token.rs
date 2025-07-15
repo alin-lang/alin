@@ -30,6 +30,8 @@ pub enum Token {
     While,
     Fn,
     Return,
+    Break,
+    Continue,
 
     Eof,
 }

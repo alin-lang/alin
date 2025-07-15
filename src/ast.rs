@@ -55,4 +55,8 @@ pub enum Expr {
 
     /// `return` statement
     Return(Box<Expr>),
+
+    Break, // untuk keluar dari loop
+
+    Continue, // untuk melanjutkan ke iterasi berikutnya dari loop
 }
