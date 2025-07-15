@@ -78,10 +78,45 @@ impl Lexer {
                     self.next_char();
                     tokens.push(Token::Comma);
                 }
-
-                ';' => {
+                
+                '=' => {
                     self.next_char();
-                    tokens.push(Token::Semicolon);
+                    if self.peek_char() == Some('=') {
+                        self.next_char();
+                        tokens.push(Token::EqualEqual);
+                    } else {
+                        tokens.push(Token::Equal);
+                    }
+                }
+
+                '!' => {
+                    self.next_char();
+                    if self.peek_char() == Some('=') {
+                        self.next_char();
+                        tokens.push(Token::BangEqual);
+                    } else {
+                        println!("Lexer warning: unexpected '!' without '='");
+                    }
+                }
+
+                '<' => {
+                    self.next_char();
+                    if self.peek_char() == Some('=') {
+                        self.next_char();
+                        tokens.push(Token::LessEqual);
+                    } else {
+                        tokens.push(Token::Less);
+                    }
+                }
+
+                '>' => {
+                    self.next_char();
+                    if self.peek_char() == Some('=') {
+                        self.next_char();
+                        tokens.push(Token::GreaterEqual);
+                    } else {
+                        tokens.push(Token::Greater);
+                    }
                 }
 
                 _ => {

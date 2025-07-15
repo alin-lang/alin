@@ -1,3 +1,5 @@
+use std::ops::RemAssign;
+
 use crate::ast::Expr;
 use crate::token::Token;
 
@@ -35,7 +37,6 @@ impl Parser {
         while self.peek() != Token::Eof {
             if let Some(expr) = self.parse_expr() {
                 exprs.push(expr);
-                self.eat(&Token::Semicolon); // optional ;
             } else {
                 panic!("Syntax error near {:?}", self.peek());
             }
@@ -48,7 +49,7 @@ impl Parser {
     }
 
     fn parse_assignment(&mut self) -> Option<Expr> {
-        let expr = self.parse_binary(0)?;
+        let expr = self.parse_comparison()?;
 
         if self.peek() == Token::Equal {
             self.next(); // consume '='
@@ -127,6 +128,25 @@ impl Parser {
 
             _ => None,
         }
+    }
+
+    fn parse_comparison(&mut self) -> Option<Expr> {
+        let mut expr = self.parse_binary(5)?; // term = +, - level
+
+        while matches!(
+            self.peek(),
+            Token::Greater | Token::Less | Token::EqualEqual | Token::BangEqual
+        ) {
+            let op = self.next().clone();
+            let right = self.parse_binary(5)?;
+            expr = Expr::Binary {
+                left: Box::new(expr),
+                op,
+                right: Box::new(right),
+            };
+        }
+
+        Some(expr)
     }
 }
 

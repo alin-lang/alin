@@ -20,7 +20,6 @@ pub enum Token {
     LBrace,
     RBrace,
     Comma,
-    Semicolon,
     If,
     Else,
     While,
