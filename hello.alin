@@ -1,6 +1,6 @@
-x = 42;
+x = 69;
 if x == 42 {
-    print("Jawaban hidup");
+    print("i dont know");
 } else {
-    print("Bukan");
+    print("what i am doin");
 }
