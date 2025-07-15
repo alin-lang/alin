@@ -6,9 +6,6 @@ mod eval;
 mod repl;
 mod playground;
 
-use lexer::Lexer;
-use parser::Parser;
-use eval::Evaluator;
 
 use std::env;
 use repl::start_repl;
